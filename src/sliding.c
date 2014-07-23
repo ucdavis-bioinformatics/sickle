@@ -32,7 +32,7 @@ int get_quality_num (char qualchar, int qualtype, kseq_t *fqrec, int pos) {
 }
 
 
-cutsites* sliding_window (kseq_t *fqrec, int qualtype, int length_threshold, int qual_threshold, int no_fiveprime, int discard_n) {
+cutsites* sliding_window (kseq_t *fqrec, int qualtype, int length_threshold, int qual_threshold, int no_fiveprime, int trunc_n, int debug) {
 
 	int window_size = (int) (0.1 * fqrec->seq.l);
 	int i,j;
@@ -43,11 +43,10 @@ cutsites* sliding_window (kseq_t *fqrec, int qualtype, int length_threshold, int
 	int found_five_prime = 0;
 	double window_avg;
 	cutsites* retvals;
+    char *npos;
 
-	/* If the sequence contains an "N" then discard if the option has been selected */
-	/* Also discard if the length of the sequence is less than the length threshold */
-	if ((discard_n && (strstr(fqrec->seq.s, "N") || strstr(fqrec->seq.s, "n"))) || 
-			(fqrec->seq.l < length_threshold)) {
+	/* discard if the length of the sequence is less than the length threshold */
+    if (fqrec->seq.l < length_threshold) {
 		retvals = (cutsites*) malloc (sizeof(cutsites));
 		retvals->three_prime_cut = -1;
 		retvals->five_prime_cut = -1;
@@ -66,9 +65,13 @@ cutsites* sliding_window (kseq_t *fqrec, int qualtype, int length_threshold, int
 
 		window_avg = (double)window_total / (double)window_size;
 
+        if (debug) printf ("no_fiveprime: %d, found 5prime: %d, window_avg: %f\n", no_fiveprime, found_five_prime, window_avg);
+
 		/* Finding the 5' cutoff */
 		/* Find when the average quality in the window goes above the threshold starting from the 5' end */
 		if (no_fiveprime == 0 && found_five_prime == 0 && window_avg >= qual_threshold) {
+
+        if (debug) printf ("inside 5-prime cut\n");
 
 			/* at what point in the window does the quality go above the threshold? */
 			for (j=window_start; j<window_start+window_size; j++) {
@@ -78,6 +81,8 @@ cutsites* sliding_window (kseq_t *fqrec, int qualtype, int length_threshold, int
 				}
 			}
 
+            if (debug) printf ("five_prime_cut: %d\n", five_prime_cut);
+
 			found_five_prime = 1;
 		}
 
@@ -85,7 +90,7 @@ cutsites* sliding_window (kseq_t *fqrec, int qualtype, int length_threshold, int
 		/* if the average quality in the window is less than the threshold */
 		/* or if the window is the last window in the read */
 		if ((window_avg < qual_threshold || 
-			window_start+window_size > fqrec->qual.l) && found_five_prime == 1) {
+			window_start+window_size > fqrec->qual.l) && (found_five_prime == 1 || no_fiveprime)) {
 
 			/* at what point in the window does the quality dip below the threshold? */
 			for (j=window_start; j<window_start+window_size; j++) {
@@ -107,14 +112,23 @@ cutsites* sliding_window (kseq_t *fqrec, int qualtype, int length_threshold, int
 	}
 
 
+    /* If truncate N option is selected, and sequence has Ns, then */
+    /* change 3' cut site to be the base before the first N */
+    if (trunc_n && ((npos = strstr(fqrec->seq.s, "N")) || (npos = strstr(fqrec->seq.s, "n")))) {
+        three_prime_cut = npos - fqrec->seq.s;
+    }
+
     /* if cutting length is less than threshold then return -1 for both */
     /* to indicate that the read should be discarded */
     /* Also, if you never find a five prime cut site, then discard whole read */
-    if ((found_five_prime == 0) || (three_prime_cut - five_prime_cut < length_threshold)) {
+    if ((found_five_prime == 0 && !no_fiveprime) || (three_prime_cut - five_prime_cut < length_threshold)) {
         three_prime_cut = -1;
         five_prime_cut = -1;
+
+        if (debug) printf("%s\n", fqrec->name.s);
     }
 
+    if (debug) printf ("\n\n");
 
 	retvals = (cutsites*) malloc (sizeof(cutsites));
 	retvals->three_prime_cut = three_prime_cut;

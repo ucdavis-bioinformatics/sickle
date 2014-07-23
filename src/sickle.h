@@ -48,7 +48,7 @@ enum {
 "version", no_argument, NULL, GETOPT_VERSION_CHAR
 #define case_GETOPT_HELP_CHAR(Usage_call) \
 case GETOPT_HELP_CHAR: \
-Usage_call(EXIT_SUCCESS); \
+Usage_call(EXIT_SUCCESS, NULL); \
 break;
 #define case_GETOPT_VERSION_CHAR(Program_name, Version, Authors) \
 case GETOPT_VERSION_CHAR: \
@@ -96,6 +96,6 @@ typedef struct __cutsites_ {
 /* Function Prototypes */
 int single_main (int argc, char *argv[]);
 int paired_main (int argc, char *argv[]);
-cutsites* sliding_window (kseq_t *fqrec, int qualtype, int length_threshold, int qual_threshold, int no_fiveprime, int discard_n);
+cutsites* sliding_window (kseq_t *fqrec, int qualtype, int length_threshold, int qual_threshold, int no_fiveprime, int trunc_n, int debug);
 
 #endif /*SICKLE_H*/
