@@ -18,20 +18,20 @@ int paired_length_threshold = 20;
 
 static struct option paired_long_options[] = {
     {"qual-type", required_argument, 0, 't'},
-    {"pe-file1", optional_argument, 0, 'f'},
-    {"pe-file2", optional_argument, 0, 'r'},
-    {"pe-combo", optional_argument, 0, 'c'},
-    {"output-pe1", optional_argument, 0, 'o'},
-    {"output-pe2", optional_argument, 0, 'p'},
-    {"output-single", optional_argument, 0, 's'},
-    {"output-combo", optional_argument, 0, 'm'},
-    {"qual-threshold", optional_argument, 0, 'q'},
-    {"length-threshold", optional_argument, 0, 'l'},
-    {"no-fiveprime", optional_argument, 0, 'x'},
-    {"truncate-n", optional_argument, 0, 'n'},
-    {"gzip-output", optional_argument, 0, 'g'},
-    {"output-combo-all", optional_argument, 0, 'M'},
-    {"quiet", optional_argument, 0, 'z'},
+    {"pe-file1", required_argument, 0, 'f'},
+    {"pe-file2", required_argument, 0, 'r'},
+    {"pe-combo", required_argument, 0, 'c'},
+    {"output-pe1", required_argument, 0, 'o'},
+    {"output-pe2", required_argument, 0, 'p'},
+    {"output-single", required_argument, 0, 's'},
+    {"output-combo", required_argument, 0, 'm'},
+    {"qual-threshold", required_argument, 0, 'q'},
+    {"length-threshold", required_argument, 0, 'l'},
+    {"no-fiveprime", no_argument, 0, 'x'},
+    {"truncate-n", no_argument, 0, 'n'},
+    {"gzip-output", no_argument, 0, 'g'},
+    {"output-combo-all", required_argument, 0, 'M'},
+    {"quiet", no_argument, 0, 'z'},
     {GETOPT_HELP_OPTION_DECL},
     {GETOPT_VERSION_OPTION_DECL},
     {NULL, 0, NULL, 0}
@@ -117,6 +117,7 @@ int paired_main(int argc, char *argv[]) {
     int gzip_output = 0;
     int combo_all=0;
     int combo_s=0;
+    int total=0;
 
     while (1) {
         int option_index = 0;
@@ -375,6 +376,7 @@ int paired_main(int argc, char *argv[]) {
 
         p1cut = sliding_window(fqrec1, qualtype, paired_length_threshold, paired_qual_threshold, no_fiveprime, trunc_n, debug);
         p2cut = sliding_window(fqrec2, qualtype, paired_length_threshold, paired_qual_threshold, no_fiveprime, trunc_n, debug);
+        total += 2;
 
         if (debug) printf("p1cut: %d,%d\n", p1cut->five_prime_cut, p1cut->three_prime_cut);
         if (debug) printf("p2cut: %d,%d\n", p2cut->five_prime_cut, p2cut->three_prime_cut);
@@ -478,6 +480,9 @@ int paired_main(int argc, char *argv[]) {
     }
 
     if (!quiet) {
+        if (infn1 && infn2) fprintf(stdout, "\nPE forward file: %s\nPE reverse file: %s\n", infn1, infn2);
+        if (infnc) fprintf(stdout, "\nPE interleaved file: %s\n", infnc);
+        fprintf(stdout, "\nTotal input FastQ records: %d (%d pairs)\n", total, (total / 2));
         fprintf(stdout, "\nFastQ paired records kept: %d (%d pairs)\n", kept_p, (kept_p / 2));
         if (pec) fprintf(stdout, "FastQ single records kept: %d\n", (kept_s1 + kept_s2));
         else fprintf(stdout, "FastQ single records kept: %d (from PE1: %d, from PE2: %d)\n", (kept_s1 + kept_s2), kept_s1, kept_s2);

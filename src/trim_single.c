@@ -19,12 +19,12 @@ static struct option single_long_options[] = {
     {"fastq-file", required_argument, 0, 'f'},
     {"output-file", required_argument, 0, 'o'},
     {"qual-type", required_argument, 0, 't'},
-    {"qual-threshold", optional_argument, 0, 'q'},
-    {"length-threshold", optional_argument, 0, 'l'},
-    {"no-fiveprime", optional_argument, 0, 'x'},
-    {"discard-n", optional_argument, 0, 'n'},
-    {"gzip-output", optional_argument, 0, 'g'},
-    {"quiet", optional_argument, 0, 'z'},
+    {"qual-threshold", required_argument, 0, 'q'},
+    {"length-threshold", required_argument, 0, 'l'},
+    {"no-fiveprime", no_argument, 0, 'x'},
+    {"discard-n", no_argument, 0, 'n'},
+    {"gzip-output", no_argument, 0, 'g'},
+    {"quiet", no_argument, 0, 'z'},
     {GETOPT_HELP_OPTION_DECL},
     {GETOPT_VERSION_OPTION_DECL},
     {NULL, 0, NULL, 0}
@@ -72,6 +72,7 @@ int single_main(int argc, char *argv[]) {
     int no_fiveprime = 0;
     int trunc_n = 0;
     int gzip_output = 0;
+    int total=0;
 
     while (1) {
         int option_index = 0;
@@ -192,6 +193,7 @@ int single_main(int argc, char *argv[]) {
     while ((l = kseq_read(fqrec)) >= 0) {
 
         p1cut = sliding_window(fqrec, qualtype, single_length_threshold, single_qual_threshold, no_fiveprime, trunc_n, debug);
+        total++;
 
         if (debug) printf("P1cut: %d,%d\n", p1cut->five_prime_cut, p1cut->three_prime_cut);
 
@@ -215,7 +217,7 @@ int single_main(int argc, char *argv[]) {
         free(p1cut);
     }
 
-    if (!quiet) fprintf(stdout, "\nFastQ records kept: %d\nFastQ records discarded: %d\n\n", kept, discard);
+    if (!quiet) fprintf(stdout, "\nSE input file: %s\n\nTotal FastQ records: %d\nFastQ records kept: %d\nFastQ records discarded: %d\n\n", infn, total, kept, discard);
 
     kseq_destroy(fqrec);
     gzclose(se);
